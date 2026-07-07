@@ -1,0 +1,9 @@
+# Build output (contains absolute local paths — never commit)
+build/
+build*/
+
+# macOS / IDE cruft
+.DS_Store
+.qtcreator/
+*.user
+CMakeLists.txt.user

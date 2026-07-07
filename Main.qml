@@ -5,13 +5,13 @@ import QtBugApp
 // rapid multi-touch. A per-touch-point buffer is kept in a `property var` map and
 // mutated in place from the MultiPointTouchArea signal handlers: a new key is inserted
 // on finger-down, an array grown on move, the key deleted on finger-up. Every finger
-// gets a fresh id (see the C++ injector), so the map inserts an ever-growing set of new
-// keys — which keeps QV4::Object::insertMember growing the object's member table.
+// gets a fresh id, so the map inserts an ever-growing set of new keys — which keeps
+// QV4::Object::insertMember growing the object's member table.
 //
-// Touches are injected automatically from C++ (see main.cpp) so no human or touchscreen
-// is needed. A large, live "ballast" heap is retained so each incremental GC mark phase
-// spans many touch events — reproducing the window in which a real app's big scene graph
-// lets an insert land mid-mark and be collected out from under itself.
+// By default a human drives the multi-touch (e.g. a MacBook trackpad); this is the
+// reliable trigger. A large, live "ballast" heap is retained so each incremental GC mark
+// phase spans many touch events — reproducing the window in which a real app's big scene
+// graph lets an insert land mid-mark and be collected out from under itself.
 Window {
     id: win
     visible: true
@@ -75,8 +75,11 @@ Window {
 
         function grow(id: int, x: real, y: real): void {
             const key = "t-" + id
-            if (key in buffers)
-                buffers[key].push(factory.make(id, x, y))
+            // Read the property-var entry once: `key in buffers` followed by a
+            // separate `buffers[key]` is two reads that can disagree under churn.
+            const buf = buffers[key]
+            if (buf !== undefined)
+                buf.push(factory.make(id, x, y))
         }
 
         function remove(id: int): void {
@@ -90,6 +93,6 @@ Window {
         anchors.centerIn: parent
         color: "white"
         font.pixelSize: 20
-        text: "Injecting synthetic multi-touch — see Application Output"
+        text: "Drum several fingers on the trackpad here, repeatedly, to crash."
     }
 }

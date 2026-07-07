@@ -125,10 +125,10 @@ application dependencies:
   keeps inserting new members (keeping `insertMember`'s table-growth path hot). A
   large retained "ballast" array is allocated at startup so each incremental mark
   phase spans many input events, approximating a real app's larger heap.
-- `main.cpp` — injects synthetic multi-touch straight into the window via
-  `QWindowSystemInterface::handleTouchEvent` on a timer, so the map is churned
-  with no human input. Set `MANUAL=1` to disable injection and drive multi-touch
-  by hand instead (e.g. a MacBook trackpad).
+- `main.cpp` — hosts the QML and, by default, does nothing else: **you drive the
+  multi-touch by hand**. Setting `AUTO_TOUCH=1` instead starts a synthetic
+  injector that feeds multi-touch via `QWindowSystemInterface::handleTouchEvent`
+  on a timer (see caveat under *Reproducer status*).
 
 ### Build and run
 
@@ -137,6 +137,11 @@ cmake -B build -DCMAKE_PREFIX_PATH=<path-to-Qt-6.8.6>
 cmake --build build
 ./build/QtBugPropertyVarMapGC
 ```
+
+Then **drum several fingers on the trackpad, over the window, repeatedly** — the
+more fingers landing and lifting together the better. It can take a sustained
+burst; keep going. (No trackpad? Any real multi-touch device works; a touchscreen
+was the original trigger.)
 
 ### Use the default collector
 
@@ -159,21 +164,22 @@ thing to try, and it is exactly what masks this bug.
 
 - **Confirmed:** this project crashes with the exact fault above under
   **physical** multi-touch (a MacBook trackpad), on the **default** collector,
-  with no environment variables set. Run it with `MANUAL=1` and drum several
-  fingers on the window repeatedly. The crash report is included
+  with no environment variables set — just build, run, and drum several fingers on
+  the window. The crash report is included
   (`CrashLog-Qt6_8_6-macOS26-trackpad.ips`).
 - Physical multi-touch is the reliable trigger, matching the two production
   crashes (an iOS touchscreen and a macOS trackpad). It can still take a sustained
   burst of multi-finger presses to hit — historically this has been **rare** (on a
   device it took thousands of "slaps", and a previous reproduction attempt did not
   trigger it in ~5000) — but the ballast heap appears to make it far quicker.
-- **Not yet automated:** the built-in synthetic touch injector (default mode)
-  churns millions of insert/delete cycles without crashing in short automated
-  runs. Our read is that the missing ingredient is having the collector
-  *mid-incremental-mark* at the instant of an insert, which the injector's
-  perfectly regular timing does not reliably line up with — whereas the irregular
-  timing of real presses does. The `ballast` heap is there to widen that window;
-  a fully hands-free trigger is still being tuned.
+- **`AUTO_TOUCH=1` does not currently crash:** the synthetic injector churns
+  millions of insert/delete cycles without faulting, printing "survived N slaps".
+  **Do not read that as "cannot reproduce"** — it is a limitation of the injector,
+  not evidence the bug is absent. Our read is that the missing ingredient is having
+  the collector *mid-incremental-mark* at the instant of an insert, which the
+  injector's perfectly regular timing does not reliably line up with, whereas the
+  irregular timing of real presses does. The `ballast` heap is there to widen that
+  window; a fully hands-free trigger is still being tuned.
 
 ## What we think is worth checking
 

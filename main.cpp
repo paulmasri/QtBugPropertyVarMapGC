@@ -140,12 +140,17 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  // MANUAL=1 disables synthetic injection so a human can drive real multi-touch
-  // (e.g. a MacBook trackpad) without the injector's events fighting theirs.
-  const bool manual = qEnvironmentVariableIsSet("MANUAL");
-  TouchInjector *injector = manual ? nullptr : new TouchInjector(window);
-  if (manual)
-    qInfo() << "MANUAL mode: injector disabled — drive multi-touch by hand.";
+  // A human driving real multi-touch (e.g. a MacBook trackpad) is the reliable
+  // trigger, so that is the default. AUTO_TOUCH=1 instead starts a synthetic
+  // injector — useful for unattended churn, but it has not been observed to crash
+  // (its perfectly regular timing rarely coincides with an in-progress mark
+  // phase), so do not read "survived N slaps" as "cannot reproduce".
+  const bool autoTouch = qEnvironmentVariableIsSet("AUTO_TOUCH");
+  TouchInjector *injector = autoTouch ? new TouchInjector(window) : nullptr;
+  if (autoTouch)
+    qInfo() << "AUTO_TOUCH mode: injecting synthetic multi-touch.";
+  else
+    qInfo() << "Drum several fingers on the trackpad, repeatedly, to crash.";
   Q_UNUSED(injector);
 
   return app.exec();

@@ -138,10 +138,17 @@ cmake --build build
 ./build/QtBugPropertyVarMapGC
 ```
 
-Then **drum several fingers on the trackpad, over the window, repeatedly** — the
-more fingers landing and lifting together the better. It can take a sustained
-burst; keep going. (No trackpad? Any real multi-touch device works; a touchscreen
-was the original trigger.)
+Then **drum many fingers on the trackpad, over the window, repeatedly** — the
+more fingers landing and lifting together the better. A recipe that crashes
+within **20–45 seconds**, four times out of four on a MacBook trackpad:
+
+- Cup one hand over the other so **~8 fingertips** reach the centre of the
+  trackpad at once.
+- Either tap all eight down/up together about **twice a second**, or just drum
+  the fingers continuously. Both work.
+
+(No trackpad? Any real multi-touch device works; a touchscreen was the original
+trigger.)
 
 ### Use the default collector
 
@@ -162,16 +169,18 @@ thing to try, and it is exactly what masks this bug.
 
 ## Reproducer status
 
-- **Confirmed:** this project crashes with the exact fault above under
-  **physical** multi-touch (a MacBook trackpad), on the **default** collector,
-  with no environment variables set — just build, run, and drum several fingers on
-  the window. The crash report is included
+- **Confirmed and repeatable:** this project crashes with the exact fault above
+  under **physical** multi-touch (a MacBook trackpad), on the **default**
+  collector, with no environment variables set — just build, run, and drum fingers
+  on the window. Four out of four attempts crashed within **20–45 seconds** using
+  the ~8-finger recipe above. The crash report is included
   (`CrashLog-Qt6_8_6-macOS26-trackpad.ips`).
 - Physical multi-touch is the reliable trigger, matching the two production
-  crashes (an iOS touchscreen and a macOS trackpad). It can still take a sustained
-  burst of multi-finger presses to hit — historically this has been **rare** (on a
-  device it took thousands of "slaps", and a previous reproduction attempt did not
-  trigger it in ~5000) — but the ballast heap appears to make it far quicker.
+  crashes (an iOS touchscreen and a macOS trackpad). Earlier, without the ballast
+  heap, this was **rare** (on a device it took thousands of "slaps", and a previous
+  reproduction attempt did not trigger it in ~5000); the retained ballast — which
+  lengthens each incremental mark phase — is what turns it into a 20–45-second
+  crash.
 - **`AUTO_TOUCH=1` does not currently crash:** the synthetic injector churns
   millions of insert/delete cycles without faulting, printing "survived N slaps".
   **Do not read that as "cannot reproduce"** — it is a limitation of the injector,

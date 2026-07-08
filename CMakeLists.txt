@@ -9,9 +9,16 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Qml Quick)
 
 qt_standard_project_setup(REQUIRES 6.5)
 
+# Number of live objects retained as GC ballast. Larger values lengthen each
+# incremental mark phase; increase this where the default is too small to keep the
+# collector busy (e.g. on iOS).
+set(BALLAST_COUNT 200000 CACHE STRING "GC ballast object count")
+
 qt_add_executable(QtBugPropertyVarMapGC
     main.cpp
 )
+
+target_compile_definitions(QtBugPropertyVarMapGC PRIVATE BALLAST_COUNT=${BALLAST_COUNT})
 
 qt_add_qml_module(QtBugPropertyVarMapGC
     URI QtBugApp

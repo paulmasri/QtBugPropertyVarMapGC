@@ -23,10 +23,13 @@ Window {
     InputPointFactory { id: factory }
 
     // Retained live heap so the incremental collector's mark phase takes many steps.
+    // Overridden from C++ with the BALLAST_COUNT build option; the literal here is the
+    // standalone-QML fallback and matches the build default.
+    property int ballastCount: 200000
     property var ballast
 
     Component.onCompleted: {
-        let a = new Array(200000)
+        let a = new Array(ballastCount)
         for (let i = 0; i < a.length; ++i)
             a[i] = { i: i, x: i * 0.5, tag: "n" + (i & 1023), kids: [i, i + 1] }
         ballast = a

@@ -152,6 +152,14 @@ within **20–45 seconds**, four times out of four on a MacBook trackpad:
 (No trackpad? Any real multi-touch device works; a touchscreen was the original
 trigger.)
 
+The retained heap size is a CMake option, **`BALLAST_COUNT`** (default `200000`) —
+the number of live objects held as GC ballast. Raise it where the default is too
+small to keep the collector busy enough to reproduce on a given device:
+
+```
+cmake -B build -DBALLAST_COUNT=1000000 -DCMAKE_PREFIX_PATH=<path-to-Qt>
+```
+
 ### Use the default collector
 
 Run it with the **default** garbage collector — no GC environment variables.
@@ -187,8 +195,8 @@ thing to try, and it is exactly what masks this bug.
 - **iOS not yet reproduced by this project:** on an iPhone (Qt 6.8.8) it survived
   ~2 minutes of drumming without crashing, even though the same bug crashed the
   production app on iOS. The mechanism is device-independent, so this is most
-  likely a matter of the fixed ballast heap being too small relative to the
-  device's GC thresholds — a larger ballast is the natural next thing to try.
+  likely a matter of the ballast heap being too small relative to the device's GC
+  thresholds — raising `BALLAST_COUNT` (see above) is the natural next thing to try.
 
 ## What we think is worth checking
 

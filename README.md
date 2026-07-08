@@ -17,9 +17,13 @@ on the default collector.
 
 ## Environment
 
-- Qt 6.8.6
-- Reproduced on macOS (trackpad multi-touch) and iOS 26 (touchscreen), both ARM64
-- Debug and release builds
+- Reproduced on macOS (ARM64), by trackpad multi-touch, across a wide range of Qt
+  versions: **6.5.12** (~45 s to crash), **6.8.6**, and **6.8.8** (~3 s). The span
+  of affected versions suggests a long-standing issue, not a recent regression.
+- Also seen in production on iOS 26 (touchscreen). The minimal reproducer here has
+  not *yet* been made to crash on an iPhone (see *Reproducer status*).
+- Debug and release builds.
+- Builds against **public Qt modules only** (Core, Gui, Qml, Quick).
 
 ## What happens
 
@@ -125,15 +129,13 @@ application dependencies:
   keeps inserting new members (keeping `insertMember`'s table-growth path hot). A
   large retained "ballast" array is allocated at startup so each incremental mark
   phase spans many input events, approximating a real app's larger heap.
-- `main.cpp` — hosts the QML and, by default, does nothing else: **you drive the
-  multi-touch by hand**. Setting `AUTO_TOUCH=1` instead starts a synthetic
-  injector that feeds multi-touch via `QWindowSystemInterface::handleTouchEvent`
-  on a timer (see caveat under *Reproducer status*).
+- `main.cpp` — just hosts the QML; **you drive the multi-touch by hand**. Uses
+  only public Qt modules.
 
 ### Build and run
 
 ```
-cmake -B build -DCMAKE_PREFIX_PATH=<path-to-Qt-6.8.6>
+cmake -B build -DCMAKE_PREFIX_PATH=<path-to-Qt>
 cmake --build build
 ./build/QtBugPropertyVarMapGC
 ```
@@ -172,23 +174,21 @@ thing to try, and it is exactly what masks this bug.
 - **Confirmed and repeatable:** this project crashes with the exact fault above
   under **physical** multi-touch (a MacBook trackpad), on the **default**
   collector, with no environment variables set — just build, run, and drum fingers
-  on the window. Four out of four attempts crashed within **20–45 seconds** using
-  the ~8-finger recipe above. The crash report is included
+  on the window. On Qt 6.8.8 it crashes in ~3 seconds; on 6.5.12, ~45 seconds; four
+  out of four attempts on 6.8.6 crashed within **20–45 seconds** using the
+  ~8-finger recipe above. The crash report is included
   (`CrashLog-Qt6_8_6-macOS26-trackpad.ips`).
 - Physical multi-touch is the reliable trigger, matching the two production
   crashes (an iOS touchscreen and a macOS trackpad). Earlier, without the ballast
   heap, this was **rare** (on a device it took thousands of "slaps", and a previous
   reproduction attempt did not trigger it in ~5000); the retained ballast — which
-  lengthens each incremental mark phase — is what turns it into a 20–45-second
-  crash.
-- **`AUTO_TOUCH=1` does not currently crash:** the synthetic injector churns
-  millions of insert/delete cycles without faulting, printing "survived N slaps".
-  **Do not read that as "cannot reproduce"** — it is a limitation of the injector,
-  not evidence the bug is absent. Our read is that the missing ingredient is having
-  the collector *mid-incremental-mark* at the instant of an insert, which the
-  injector's perfectly regular timing does not reliably line up with, whereas the
-  irregular timing of real presses does. The `ballast` heap is there to widen that
-  window; a fully hands-free trigger is still being tuned.
+  lengthens each incremental mark phase — is what turns it into a seconds-to-tens-
+  of-seconds crash.
+- **iOS not yet reproduced by this project:** on an iPhone (Qt 6.8.8) it survived
+  ~2 minutes of drumming without crashing, even though the same bug crashed the
+  production app on iOS. The mechanism is device-independent, so this is most
+  likely a matter of the fixed ballast heap being too small relative to the
+  device's GC thresholds — a larger ballast is the natural next thing to try.
 
 ## What we think is worth checking
 

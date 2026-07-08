@@ -8,10 +8,10 @@ import QtBugApp
 // gets a fresh id, so the map inserts an ever-growing set of new keys — which keeps
 // QV4::Object::insertMember growing the object's member table.
 //
-// By default a human drives the multi-touch (e.g. a MacBook trackpad); this is the
-// reliable trigger. A large, live "ballast" heap is retained so each incremental GC mark
-// phase spans many touch events — reproducing the window in which a real app's big scene
-// graph lets an insert land mid-mark and be collected out from under itself.
+// A human drives the multi-touch (e.g. a MacBook trackpad or a touchscreen). A large,
+// live "ballast" heap is retained so each incremental GC mark phase spans many touch
+// events — reproducing the window in which a real app's big scene graph lets an insert
+// land mid-mark and be collected out from under itself.
 Window {
     id: win
     visible: true

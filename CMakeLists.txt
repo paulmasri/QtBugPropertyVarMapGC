@@ -23,12 +23,10 @@ qt_add_qml_module(QtBugPropertyVarMapGC
         Main.qml
 )
 
-# Qt6::GuiPrivate provides <qpa/qwindowsysteminterface.h>, used to inject synthetic touch.
 target_link_libraries(QtBugPropertyVarMapGC
     PRIVATE
     Qt6::Core
     Qt6::Gui
-    Qt6::GuiPrivate
     Qt6::Qml
     Qt6::Quick
 )

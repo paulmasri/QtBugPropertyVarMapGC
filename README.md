@@ -18,10 +18,11 @@ on the default collector.
 ## Environment
 
 - Reproduced on macOS (ARM64), by trackpad multi-touch, across a wide range of Qt
-  versions: **6.5.12** (~45 s to crash), **6.8.6**, and **6.8.8** (~3 s). The span
-  of affected versions suggests a long-standing issue, not a recent regression.
-- Also seen in production on iOS 26 (touchscreen). The minimal reproducer here has
-  not *yet* been made to crash on an iPhone (see *Reproducer status*).
+  versions — **6.5.12, 6.8.6, 6.8.8, and 6.11.1** — usually crashing within 45
+  seconds. The span of affected versions, still current in 6.11.1, indicates a
+  long-standing issue rather than a recent regression.
+- Also seen in production on iOS 26 (touchscreen), but this minimal project does
+  not reproduce on an iPhone (see *Reproducer status*).
 - Debug and release builds.
 - Builds against **public Qt modules only** (Core, Gui, Qml, Quick).
 
@@ -141,8 +142,8 @@ cmake --build build
 ```
 
 Then **drum many fingers on the trackpad, over the window, repeatedly** — the
-more fingers landing and lifting together the better. A recipe that crashes
-within **20–45 seconds**, four times out of four on a MacBook trackpad:
+more fingers landing and lifting together the better. A recipe that reliably
+crashes, usually **within 45 seconds**, on a MacBook trackpad:
 
 - Cup one hand over the other so **~8 fingertips** reach the centre of the
   trackpad at once.
@@ -182,21 +183,20 @@ thing to try, and it is exactly what masks this bug.
 - **Confirmed and repeatable:** this project crashes with the exact fault above
   under **physical** multi-touch (a MacBook trackpad), on the **default**
   collector, with no environment variables set — just build, run, and drum fingers
-  on the window. On Qt 6.8.8 it crashes in ~3 seconds; on 6.5.12, ~45 seconds; four
-  out of four attempts on 6.8.6 crashed within **20–45 seconds** using the
-  ~8-finger recipe above. The crash report is included
+  on the window. It usually crashes within **45 seconds** using the ~8-finger
+  recipe above. The crash report is included
   (`CrashLog-Qt6_8_6-macOS26-trackpad.ips`).
 - Physical multi-touch is the reliable trigger, matching the two production
   crashes (an iOS touchscreen and a macOS trackpad). Earlier, without the ballast
   heap, this was **rare** (on a device it took thousands of "slaps", and a previous
   reproduction attempt did not trigger it in ~5000); the retained ballast — which
-  lengthens each incremental mark phase — is what turns it into a seconds-to-tens-
-  of-seconds crash.
-- **iOS not yet reproduced by this project:** on an iPhone (Qt 6.8.8) it survived
-  ~2 minutes of drumming without crashing, even though the same bug crashed the
-  production app on iOS. The mechanism is device-independent, so this is most
-  likely a matter of the ballast heap being too small relative to the device's GC
-  thresholds — raising `BALLAST_COUNT` (see above) is the natural next thing to try.
+  lengthens each incremental mark phase — is what makes it reliable.
+- **iOS not reproduced by this project:** on an iPhone (Qt 6.8.8) it did not crash
+  even after ~2 minutes of drumming with `BALLAST_COUNT` raised to 1,000,000 —
+  despite the identical `insertMember` fault crashing the production app on iOS.
+  So on iOS this minimal project is not a reliable reproducer; the production crash
+  logs remain the evidence there. (The macOS reproducer and the iOS production
+  crash hit the same fault, so it is the same bug.)
 
 ## What we think is worth checking
 

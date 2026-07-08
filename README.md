@@ -19,12 +19,10 @@ on the default collector.
 
 - Reproduced on macOS (ARM64), by trackpad multi-touch, across a wide range of Qt
   versions — **6.5.12, 6.8.6, 6.8.8, and 6.11.1** — usually crashing within 45
-  seconds. The span of affected versions, still current in 6.11.1, indicates a
+  seconds, using this reproducer. The span of affected versions, still current in 6.11.1, indicates a
   long-standing issue rather than a recent regression.
-- Also seen in production on iOS 26 (touchscreen), but this minimal project does
-  not reproduce on an iPhone (see *Reproducer status*).
+- The same fault has also seen repeatedly in a production app on iPad over a long span: Qt 6.4.2 - 6.8.6 on iOS 15 - 26, but this minimal project does not reproduce on an iPhone (see *Reproducer status*). Previously reported as Qt Support ticket 00810441 (closed as there was insufficient information at the time to track this down).
 - Debug and release builds.
-- Builds against **public Qt modules only** (Core, Gui, Qml, Quick).
 
 ## What happens
 
@@ -63,7 +61,7 @@ object's storage being collected, not the input path. In every case the fault
 address is a small offset into a null base (`0x38`, `0x28`, `0x10`), i.e. a write
 into null `memberData`.
 
-**1. This reproducer (macOS 26.5.1, Qt 6.8.6, default GC, trackpad)** — the
+**1. This reproducer (macOS 26.5.1, Qt 6.8.6 / 6.8.8 / 6.11.1 / 6.5.12, default GC, trackpad)** — the
 store happens inside the reproducer's `MultiPointTouchArea` `onPressed` handler:
 
 ```
@@ -85,9 +83,7 @@ QQuickMultiPointTouchArea::touchEvent(...)
 **2. Production app, touch path (macOS)** — same handler, same fault
 (`insertMember`, addr `0x28`), also via `-[QNSView touchesBeganWithEvent:]`.
 
-**3. Production app, hover path (iOS 26)** — the store happens instead inside a
-`MouseArea` `onPositionChanged` handler delivered during frame-synchronous event
-flushing (`insertMember`, addr `0x10`):
+**3. Production app, hover path (Qt 6.4.2 - 6.8.6, iOS 15 - 26)** — the store happens instead inside a `MouseArea` `onPositionChanged` handler delivered during frame-synchronous event flushing (`insertMember`, addr `0x10`):
 
 ```
 QV4::Object::insertMember(...)                           // crash
